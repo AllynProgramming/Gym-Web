@@ -866,9 +866,12 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showMessage((workoutId ? 'Workout updated!' : 'Workout saved!') + ' <a href="workouts.php">View in My Workouts</a>', 'success');
-                    if (!workoutId) {
-                        resetFormForNextEntry();
+                    if (workoutId) {
+                        // Editing an existing workout
+                        showMessage('Workout updated! <a href="workouts.php">View in My Workouts</a>', 'success');
+                    } else {
+                        // New workout saved — redirect to edit it immediately for smooth UX
+                        window.location.href = `log-workout.php?workout_id=${data.sessionId}`;
                     }
                 } else {
                     showMessage(data.error || 'Something went wrong. Please try again.', 'error');
