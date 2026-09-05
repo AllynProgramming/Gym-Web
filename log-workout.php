@@ -708,6 +708,9 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
     </template>
 
     <script>
+        // Get userId from server FIRST (needed for localStorage)
+        const userId = <?php echo json_encode($userId); ?>;
+
         // ---------- Plan dropdown <-> custom plan text field ----------
         const planSelect = document.getElementById('plan_select');
         const planNameInput = document.getElementById('plan_name');
@@ -1063,7 +1066,7 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         }
 
         // Get userId for localStorage (from the server)
-        const userId = <?php echo json_encode($userId); ?>;
+        
 
         // ---------- Calculate duration from start and end times ----------
         function calculateDuration() {
