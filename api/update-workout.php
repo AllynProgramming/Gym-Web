@@ -41,8 +41,28 @@ if (!verifyOwnership($conn, 'workout_sessions', $workoutId)) {
 
 $planName = trim($input['plan_name'] ?? '');
 $sessionDate = trim($input['session_date'] ?? '');
-$durationMinutes = trim((string) ($input['duration_minutes'] ?? ''));
-$durationMinutes = ($durationMinutes === '') ? null : (int) $durationMinutes;
+$startTime = trim($input['start_time'] ?? '');
+$endTime = trim($input['end_time'] ?? '');
+$durationMinutes = null;
+
+// Calculate duration from start and end times if both are provided
+if ($startTime && $endTime) {
+    $startParts = explode(':', $startTime);
+    $endParts = explode(':', $endTime);
+    if (count($startParts) === 2 && count($endParts) === 2) {
+        $startTotalMin = (int) $startParts[0] * 60 + (int) $startParts[1];
+        $endTotalMin = (int) $endParts[0] * 60 + (int) $endParts[1];
+        $durationMinutes = $endTotalMin - $startTotalMin;
+        if ($durationMinutes <= 0) {
+            $durationMinutes = null; // Invalid time range
+        }
+    }
+} else {
+    // Fallback to duration_minutes if provided
+    $durationMinutes = trim((string) ($input['duration_minutes'] ?? ''));
+    $durationMinutes = ($durationMinutes === '') ? null : (int) $durationMinutes;
+}
+
 $exercisesInput = is_array($input['exercises'] ?? null) ? $input['exercises'] : [];
 
 if (empty($sessionDate)) {

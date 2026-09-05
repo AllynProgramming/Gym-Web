@@ -536,9 +536,18 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
                         <label for="session_date">Date</label>
                         <input type="date" id="session_date" name="session_date" value="<?php echo htmlspecialchars($selectedSessionDate); ?>" required>
                     </div>
+                </div>
+                <div class="field-grid">
                     <div class="form-group">
-                        <label for="duration_minutes">Duration (min)</label>
-                        <input type="number" id="duration_minutes" name="duration_minutes" min="0" placeholder="60">
+                        <label for="start_time">Start time</label>
+                        <input type="time" id="start_time" name="start_time">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">End time (optional)</label>
+                        <input type="time" id="end_time" name="end_time">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12px;">
+                        <span id="duration_display" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;"></span>
                     </div>
                 </div>
             </div>
@@ -800,6 +809,37 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         // form's submit listener below), which is why Save fell back to a plain page reload
         // that saved nothing.
 
+        // ---------- Calculate duration from start and end times ----------
+        function calculateDuration() {
+            const startTime = document.getElementById('start_time').value;
+            const endTime = document.getElementById('end_time').value;
+            const durationDisplay = document.getElementById('duration_display');
+
+            if (!startTime || !endTime) {
+                if (durationDisplay) {
+                    durationDisplay.textContent = '';
+                }
+                return null;
+            }
+
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+
+            const startTotalMin = startHour * 60 + startMin;
+            const endTotalMin = endHour * 60 + endMin;
+            const duration = endTotalMin - startTotalMin;
+
+            if (durationDisplay && duration > 0) {
+                durationDisplay.textContent = `~${duration} min`;
+            }
+
+            return duration > 0 ? duration : null;
+        }
+
+        // Auto-calculate duration when times change
+        document.getElementById('start_time').addEventListener('change', calculateDuration);
+        document.getElementById('end_time').addEventListener('change', calculateDuration);
+
         // ---------- Build the payload from the DOM, then submit as JSON ----------
         function buildPayload() {
             const exercises = [];
@@ -825,11 +865,15 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
                 exercises.push({ name, notes, sets });
             });
 
+            const durationMinutes = calculateDuration();
+
             return {
                 workout_id: workoutId,
                 plan_name: planNameInput.value,
                 session_date: document.getElementById('session_date').value,
-                duration_minutes: document.getElementById('duration_minutes').value,
+                start_time: document.getElementById('start_time').value || null,
+                end_time: document.getElementById('end_time').value || null,
+                duration_minutes: durationMinutes,
                 exercises,
             };
         }
@@ -847,7 +891,9 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         function resetFormForNextEntry() {
             // Start fresh after saving, default to today’s date so add flow is always current.
             document.getElementById('session_date').value = getLocalDateString();
-            document.getElementById('duration_minutes').value = '';
+            document.getElementById('start_time').value = '';
+            document.getElementById('end_time').value = '';
+            document.getElementById('duration_display').textContent = '';
             exerciseList.innerHTML = '';
             addExerciseCard();
         }
