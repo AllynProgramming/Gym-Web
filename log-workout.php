@@ -35,7 +35,7 @@ $editWorkoutData = null;
 
 if ($editWorkoutId) {
     $stmt = $conn->prepare(
-        "SELECT ws.session_date, ws.duration_minutes, wp.plan_name
+        "SELECT ws.session_date, ws.start_time, ws.end_time, ws.duration_minutes, wp.plan_name
          FROM workout_sessions ws
          LEFT JOIN workout_plans wp ON ws.workout_plan_id = wp.id
          WHERE ws.id = ? AND ws.user_id = ? LIMIT 1"
@@ -49,6 +49,8 @@ if ($editWorkoutId) {
         $selectedSessionDate = $sessionRow['session_date'];
         $editWorkoutData = [
             'session_date' => $sessionRow['session_date'],
+            'start_time' => $sessionRow['start_time'] ?? '',
+            'end_time' => $sessionRow['end_time'] ?? '',
             'duration_minutes' => $sessionRow['duration_minutes'],
             'plan_name' => $sessionRow['plan_name'] ?? '',
             'exercises' => [],
@@ -414,7 +416,7 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         /* ---------- Save bar ---------- */
         .save-bar { display: flex; gap: 12px; justify-content: flex-end; }
 
-        button.btn-primary, button.btn-ghost {
+        button.btn-primary, button.btn-ghost, button.btn-secondary {
             border: none;
             cursor: pointer;
             font-weight: 700;
@@ -438,7 +440,107 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         .btn-ghost { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1); }
         .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
 
+        .btn-secondary { background: rgba(151, 109, 222, 0.15); color: #d8b8ff; border: 1px solid rgba(151, 109, 222, 0.4); }
+        .btn-secondary:hover { background: rgba(151, 109, 222, 0.25); transform: translateY(-2px); }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .hidden { display: none; }
+
+        /* ---------- Quick Adjust Modal ---------- */
+        .quick-adjust-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .quick-adjust-modal {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 380px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-head h3 { font-size: 1.1rem; margin: 0; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover { color: var(--text-main); }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .adjust-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .adjust-btn {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(151, 109, 222, 0.3);
+            background: rgba(151, 109, 222, 0.08);
+            color: #d8b8ff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            min-height: 44px;
+        }
+
+        .adjust-btn:hover { background: rgba(151, 109, 222, 0.16); border-color: rgba(151, 109, 222, 0.5); }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal-footer button { flex: 1; }
+
+        .modal-apply:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* ---------- Mobile ---------- */
         @media (max-width: 860px) {
@@ -501,8 +603,13 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
     <div class="container">
         <div class="page-head">
-            <h2>Log a workout</h2>
-            <p>One card per exercise — add as many sets as you actually did, warmups included.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <h2>Log a workout</h2>
+                    <p>One card per exercise — add as many sets as you actually did, warmups included.</p>
+                </div>
+                <button type="button" id="duplicateLastBtn" class="btn-secondary">📋 Duplicate last</button>
+            </div>
         </div>
 
         <div class="message" id="formMessage"></div>
@@ -658,6 +765,8 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         function populateWorkout(data) {
             document.getElementById('session_date').value = data.session_date;
+            document.getElementById('start_time').value = data.start_time ?? '';
+            document.getElementById('end_time').value = data.end_time ?? '';
             document.getElementById('duration_minutes').value = data.duration_minutes ?? '';
             setPlanSelection(data.plan_name ?? '');
 
@@ -802,12 +911,159 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
             lastScrollY = currentScrollY;
         });
 
-        // NOTE: the initial-form-population call (populateWorkout / addExerciseCard) moved to
-        // the very end of this script — see the bottom. It references saveBtn and the submit
-        // handler's setup, which don't exist yet at this point in the file, so calling it here
-        // threw a ReferenceError that silently killed the rest of the script (including the
-        // form's submit listener below), which is why Save fell back to a plain page reload
-        // that saved nothing.
+        // ---------- LocalStorage auto-save ----------
+        const STORAGE_KEY = `gym-workout-draft-${userId}`;
+        const AUTOSAVE_DELAY = 1000; // Save after 1 second of inactivity
+        let autosaveTimeout;
+
+        function saveFormToLocalStorage() {
+            const formData = buildPayload();
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+                console.log('Form auto-saved to localStorage');
+            } catch (e) {
+                console.warn('Could not save to localStorage:', e);
+            }
+        }
+
+        function loadFormFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    // Only restore if not editing an existing workout
+                    if (!editWorkoutData) {
+                        populateWorkout(data);
+                        showMessage('📝 Restored your previous session draft', 'success');
+                        setTimeout(() => messageEl.classList.remove('show'), 3000);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not restore from localStorage:', e);
+            }
+            return false;
+        }
+
+        function clearFormLocalStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                console.warn('Could not clear localStorage:', e);
+            }
+        }
+
+        // Auto-save on input changes
+        document.addEventListener('change', () => {
+            clearTimeout(autosaveTimeout);
+            autosaveTimeout = setTimeout(saveFormToLocalStorage, AUTOSAVE_DELAY);
+        });
+
+        document.addEventListener('input', () => {
+            clearTimeout(autosaveTimeout);
+            autosaveTimeout = setTimeout(saveFormToLocalStorage, AUTOSAVE_DELAY);
+        });
+
+        // ---------- Duplicate last workout ----------
+        async function duplicateLastWorkout() {
+            const btn = document.getElementById('duplicateLastBtn');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+
+            try {
+                const res = await fetch('api/get-last-workout.php');
+                const data = await res.json();
+
+                if (data.success) {
+                    populateWorkout(data);
+                    showMessage('✅ Last workout loaded! Adjust weights and save.', 'success');
+                    setTimeout(() => messageEl.classList.remove('show'), 3000);
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    showMessage(data.error || 'Could not load last workout.', 'error');
+                }
+            } catch (e) {
+                showMessage('Error loading last workout.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📋 Duplicate last';
+            }
+        }
+
+        document.getElementById('duplicateLastBtn').addEventListener('click', duplicateLastWorkout);
+
+        // ---------- Quick weight adjustment modal ----------
+        function showWeightAdjustmentModal(sessionId) {
+            const modal = document.createElement('div');
+            modal.className = 'quick-adjust-modal-overlay';
+            modal.innerHTML = `
+                <div class="quick-adjust-modal">
+                    <div class="modal-head">
+                        <h3>Adjust weights for next time?</h3>
+                        <button class="modal-close" type="button">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="color: var(--text-muted); margin-bottom: 16px;">Bump all weights up or down for your next session.</p>
+                        <div class="adjust-buttons">
+                            <button type="button" class="adjust-btn adjust-minus">-2.5 kg</button>
+                            <button type="button" class="adjust-btn adjust-custom">Custom</button>
+                            <button type="button" class="adjust-btn adjust-plus">+2.5 kg</button>
+                        </div>
+                        <input type="number" id="customAdjustAmount" class="hidden" placeholder="Enter amount (e.g., 5 or -2.5)" step="0.5" style="width: 100%; margin-top: 12px; display: none;">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-ghost modal-cancel">Skip</button>
+                        <button type="button" class="btn-primary modal-apply" disabled>Apply & Edit</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            let adjustAmount = null;
+            const customInput = modal.querySelector('#customAdjustAmount');
+            const applyBtn = modal.querySelector('.modal-apply');
+            const customBtn = modal.querySelector('.adjust-custom');
+
+            modal.querySelector('.adjust-minus').addEventListener('click', () => {
+                adjustAmount = -2.5;
+                applyBtn.disabled = false;
+            });
+
+            modal.querySelector('.adjust-plus').addEventListener('click', () => {
+                adjustAmount = 2.5;
+                applyBtn.disabled = false;
+            });
+
+            customBtn.addEventListener('click', () => {
+                customInput.style.display = customInput.style.display === 'none' ? 'block' : 'none';
+                customInput.focus();
+            });
+
+            customInput.addEventListener('change', () => {
+                const val = parseFloat(customInput.value);
+                if (!isNaN(val)) {
+                    adjustAmount = val;
+                    applyBtn.disabled = false;
+                }
+            });
+
+            applyBtn.addEventListener('click', () => {
+                if (adjustAmount !== null) {
+                    window.location.href = `log-workout.php?workout_id=${sessionId}&adjust=${adjustAmount}`;
+                }
+            });
+
+            modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+            modal.querySelector('.modal-cancel').addEventListener('click', () => modal.remove());
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        // Get userId for localStorage (from the server)
+        const userId = <?php echo json_encode($userId); ?>;
 
         // ---------- Calculate duration from start and end times ----------
         function calculateDuration() {
@@ -912,12 +1168,16 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    clearFormLocalStorage(); // Clear saved draft after successful save
                     if (workoutId) {
                         // Editing an existing workout
                         showMessage('Workout updated! <a href="workouts.php">View in My Workouts</a>', 'success');
                     } else {
-                        // New workout saved — redirect to edit it immediately for smooth UX
-                        window.location.href = `log-workout.php?workout_id=${data.sessionId}`;
+                        // New workout saved — show quick adjust modal then redirect to edit
+                        showMessage('✅ Workout saved!', 'success');
+                        setTimeout(() => {
+                            showWeightAdjustmentModal(data.sessionId);
+                        }, 500);
                     }
                 } else {
                     showMessage(data.error || 'Something went wrong. Please try again.', 'error');
@@ -935,9 +1195,25 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         // Populate the form now that everything above (saveBtn, the submit handler, etc.) exists.
         if (editWorkoutData) {
             populateWorkout(editWorkoutData);
-        } else {
+        } else if (!loadFormFromLocalStorage()) {
             // Start with one exercise card (which itself starts with one set row)
             addExerciseCard();
+        }
+
+        // Handle weight adjustment if coming from quick adjust modal
+        const urlParams = new URLSearchParams(window.location.search);
+        const adjustAmount = parseFloat(urlParams.get('adjust'));
+        if (!isNaN(adjustAmount) && adjustAmount !== 0 && editWorkoutData) {
+            // Adjust all weights
+            exerciseList.querySelectorAll('.set-weight-input').forEach(input => {
+                const currentWeight = parseFloat(input.value) || 0;
+                const newWeight = Math.max(0, currentWeight + adjustAmount);
+                input.value = newWeight.toFixed(adjustAmount % 1 !== 0 ? 1 : 0);
+            });
+            showMessage(`📈 Weights adjusted by ${adjustAmount > 0 ? '+' : ''}${adjustAmount} kg`, 'success');
+            setTimeout(() => messageEl.classList.remove('show'), 3000);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname + '?workout_id=' + editWorkoutId);
         }
     </script>
 </body>
