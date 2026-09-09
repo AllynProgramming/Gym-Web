@@ -768,8 +768,9 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         function populateWorkout(data) {
             document.getElementById('session_date').value = data.session_date;
-            document.getElementById('start_time').value = data.start_time ?? '';
-            document.getElementById('end_time').value = data.end_time ?? '';
+            // Ensure times are in HH:MM format (strip seconds if present)
+            document.getElementById('start_time').value = data.start_time ? data.start_time.substring(0, 5) : '';
+            document.getElementById('end_time').value = data.end_time ? data.end_time.substring(0, 5) : '';
             setPlanSelection(data.plan_name ?? '');
 
             exerciseList.innerHTML = '';
