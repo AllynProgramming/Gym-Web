@@ -157,22 +157,31 @@ function ringCircumference($radius) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Gym Progression Tracker</title>
     <style>
-        /* Theme colors — tweak these variables first to change the dashboard palette quickly. */
+        /* Theme colors — Teal + Orange Flat Modern Design */
         :root {
             color-scheme: dark;
-            --bg-dark: #05030a;                 /* Main page background */
-            --panel: rgba(15, 8, 28, 0.95);     /* Card / stat panel background */
-            --panel-2: rgba(20, 12, 40, 0.98);  /* Secondary panel background */
-            --text-main: #f6f7ff;              /* Main text color */
-            --text-muted: #adb2d4;             /* Secondary text color */
-            --accent: #7851A9;                 /* Royal purple accent color */
-            --accent-strong: #9b6af0;          /* Bright purple accent */
-            --accent-soft: rgba(120, 81, 169, 0.22); /* Soft purple glow */
-            --cal: #a755ff;                     /* Calories ring color */
-            --protein: #4fd6ac;                 /* Protein ring color */
-            --carbs: #ffb454;                   /* Carbs ring color */
-            --fat: #ff7ab8;                      /* Fat ring color */
-            --border: rgba(151, 109, 222, 0.22); /* Border color */
+            --bg-dark: #0F172A;                 /* Dark slate background */
+            --bg-secondary: #1A2E4A;            /* Slightly lighter for depth */
+            --panel: #1E3A5F;                   /* Card background - flat solid */
+            --panel-hover: #253D63;             /* Subtle hover state */
+            --text-main: #E2E8F0;              /* Light gray text */
+            --text-muted: #94A3B8;             /* Muted gray */
+            --primary: #14B8A6;                /* Teal primary */
+            --primary-dark: #0D9488;           /* Darker teal */
+            --primary-light: #2DD4BF;          /* Lighter teal */
+            --accent: #F97316;                 /* Orange accent */
+            --accent-dark: #EA580C;            /* Darker orange */
+            --accent-light: #FB923C;           /* Lighter orange */
+            --success: #10B981;                /* Green for positive */
+            --warning: #F59E0B;                /* Amber for warnings */
+            --danger: #EF4444;                 /* Red for danger */
+            --border: rgba(20, 184, 166, 0.1); /* Subtle teal borders */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);    /* Subtle shadow */
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);  /* Medium shadow */
+            --nutrition-cal: #F97316;          /* Orange for calories */
+            --nutrition-protein: #10B981;     /* Green for protein */
+            --nutrition-carbs: #F59E0B;       /* Amber for carbs */
+            --nutrition-fat: #EC4899;         /* Pink for fat */
         }
 
         * {
@@ -184,18 +193,15 @@ function ringCircumference($radius) {
         body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
-            background:
-                radial-gradient(circle at top left, rgba(120, 81, 169, 0.18), transparent 20%),
-                radial-gradient(circle at bottom right, rgba(120, 81, 169, 0.12), transparent 18%),
-                var(--bg-dark);
+            background: var(--bg-dark);
             color: var(--text-main);
         }
 
         .navbar {
-            background: rgba(5, 5, 15, 0.96);
-            border-bottom: 1px solid rgba(151, 109, 222, 0.2);
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--primary);
             color: white;
-            padding: 22px 32px;
+            padding: 18px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -203,7 +209,7 @@ function ringCircumference($radius) {
             position: sticky;
             top: 0;
             z-index: 10;
-            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-sm);
         }
 
         .navbar h1 {
@@ -217,24 +223,22 @@ function ringCircumference($radius) {
             justify-content: center;
             width: 46px;
             height: 46px;
-            border: 1px solid rgba(151, 109, 222, 0.3);
+            border: 2px solid var(--primary);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
+            background: transparent;
+            color: var(--primary);
             cursor: pointer;
-            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .nav-toggle:hover,
         .nav-toggle:focus-visible {
-            background: rgba(120, 81, 169, 0.2);
-            border-color: rgba(155, 106, 240, 0.6);
-            transform: translateY(-1px);
+            background: rgba(20, 184, 166, 0.1);
+            transform: translateY(-2px);
         }
 
         .nav-toggle.is-active {
-            background: rgba(120, 81, 169, 0.24);
-            border-color: rgba(155, 106, 240, 0.7);
+            background: rgba(20, 184, 166, 0.15);
         }
 
         .barbell-icon {
@@ -279,16 +283,18 @@ function ringCircumference($radius) {
             color: var(--text-main);
             text-decoration: none;
             padding: 10px 16px;
-            border-radius: 999px;
-            transition: background 0.3s ease, transform 0.2s ease;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            background: transparent;
+            border: 1px solid var(--primary);
             font-weight: 600;
+            font-size: 0.9rem;
         }
 
         .navbar-right a:hover {
-            background: rgba(120, 81, 169, 0.18);
-            transform: translateY(-1px);
+            background: rgba(20, 184, 166, 0.15);
+            color: var(--primary-light);
+            transform: translateY(-2px);
         }
 
         .container {
@@ -503,18 +509,19 @@ function ringCircumference($radius) {
         }
 
         .stat-card {
-            background: rgba(18, 10, 37, 0.96);
+            background: var(--panel);
             padding: 24px;
-            border-radius: 24px;
-            border: 1px solid rgba(120, 81, 169, 0.18);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 16px 30px rgba(0, 0, 0, 0.20);
-            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(120, 81, 169, 0.45);
-            box-shadow: 0 22px 42px rgba(120, 81, 169, 0.22);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+            background: var(--panel-hover);
         }
 
         .stat-card p {
@@ -522,16 +529,36 @@ function ringCircumference($radius) {
             font-size: 0.9rem;
             margin-bottom: 10px;
             letter-spacing: 0.03em;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-size: 0.75rem;
         }
 
         .stat-card h3 {
-            color: #fff;
+            color: var(--primary-light);
             font-size: 2rem;
             letter-spacing: -0.03em;
+            font-weight: 700;
         }
 
         .action-button {
-            background: linear-gradient(135deg, #a755ff 0%, #7d3fd0 55%, #632a9f 100%);
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
             color: #f8f9ff;
             padding: 18px 22px;
             border-radius: 22px;
