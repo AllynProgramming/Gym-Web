@@ -542,6 +542,139 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         .modal-apply:disabled { opacity: 0.4; cursor: not-allowed; }
 
+        /* ---------- Delete Confirmation Modal ---------- */
+        .delete-confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .delete-confirm-modal {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        .delete-confirm-modal .modal-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .delete-confirm-modal h3 {
+            font-size: 1rem;
+            margin: 0;
+            color: #ffb3b3;
+        }
+
+        .delete-confirm-modal .modal-body {
+            padding: 16px 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .delete-confirm-modal .modal-footer {
+            gap: 8px;
+            padding: 12px 16px;
+        }
+
+        .delete-confirm-modal .modal-footer button {
+            flex: 1;
+            padding: 10px 14px;
+            min-height: 40px;
+            font-size: 0.85rem;
+        }
+
+        .btn-danger {
+            background: rgba(255, 94, 94, 0.2);
+            color: #ffb3b3;
+            border: 1px solid rgba(255, 94, 94, 0.4);
+        }
+
+        .btn-danger:hover { background: rgba(255, 94, 94, 0.3); }
+
+        /* ---------- Rest Timer Modal ---------- */
+        .rest-timer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            padding: 16px;
+        }
+
+        .rest-timer-modal {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            max-width: 320px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+            text-align: center;
+        }
+
+        .rest-timer-modal .modal-head {
+            padding: 20px 20px 10px;
+            border: none;
+        }
+
+        .rest-timer-modal .modal-head h3 {
+            font-size: 1.2rem;
+            margin: 0 0 8px 0;
+        }
+
+        .timer-display {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--accent-strong);
+            margin: 20px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .timer-presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .timer-preset {
+            padding: 10px;
+            border: 1px solid rgba(151, 109, 222, 0.3);
+            background: rgba(151, 109, 222, 0.08);
+            color: #d8b8ff;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .timer-preset:hover { background: rgba(151, 109, 222, 0.16); }
+        .timer-preset.active { background: rgba(155, 106, 240, 0.3); border-color: var(--accent-strong); }
+
         /* ---------- Mobile ---------- */
         @media (max-width: 860px) {
             .nav-toggle { display: inline-flex; }
@@ -686,7 +819,10 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
             </div>
             <div class="form-group exercise-name-field">
                 <label>Exercise name</label>
-                <input type="text" class="ex-name-input" list="exerciseNames" placeholder="Incline Bench Press" required>
+                <div style="position: relative;">
+                    <input type="text" class="ex-name-input" list="exerciseNames" placeholder="Incline Bench Press" required>
+                    <div class="exercise-pr-display" style="font-size: 0.75rem; color: var(--accent-strong); margin-top: 4px; display: none; font-weight: 600;"></div>
+                </div>
             </div>
             <div class="sets-list"></div>
             <button type="button" class="add-set-btn">+ Add set</button>
@@ -848,11 +984,45 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         // One delegated listener handles every button inside every exercise card,
         // including ones added later — no per-clone listeners needed.
+        
+        function showDeleteConfirmation(message, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'delete-confirm-overlay';
+            modal.innerHTML = `
+                <div class="delete-confirm-modal">
+                    <div class="modal-head">
+                        <h3>⚠️ Confirm delete</h3>
+                    </div>
+                    <div class="modal-body">
+                        ${message}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-ghost delete-cancel">Cancel</button>
+                        <button type="button" class="btn-danger delete-confirm">Delete</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.delete-cancel').addEventListener('click', () => modal.remove());
+            modal.querySelector('.delete-confirm').addEventListener('click', () => {
+                onConfirm();
+                modal.remove();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
         exerciseList.addEventListener('click', function (e) {
             const removeExBtn = e.target.closest('.remove-exercise-btn');
             if (removeExBtn && !removeExBtn.disabled) {
-                removeExBtn.closest('.exercise-card').remove();
-                renumberExercises();
+                showDeleteConfirmation('Delete this exercise and all its sets?', () => {
+                    removeExBtn.closest('.exercise-card').remove();
+                    renumberExercises();
+                });
                 return;
             }
 
@@ -864,9 +1034,11 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
             const removeSetBtn = e.target.closest('.remove-set-btn');
             if (removeSetBtn && !removeSetBtn.disabled) {
-                const card = removeSetBtn.closest('.exercise-card');
-                removeSetBtn.closest('.set-row').remove();
-                renumberSets(card);
+                showDeleteConfirmation('Delete this set?', () => {
+                    const card = removeSetBtn.closest('.exercise-card');
+                    removeSetBtn.closest('.set-row').remove();
+                    renumberSets(card);
+                });
                 return;
             }
 
@@ -881,6 +1053,140 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         });
 
         document.getElementById('addExerciseBtn').addEventListener('click', () => addExerciseCard(true));
+
+        // ---------- Exercise PR display on autocomplete ----------
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('ex-name-input')) {
+                const exerciseName = e.target.value.trim();
+                const card = e.target.closest('.exercise-card');
+                const prDisplay = card.querySelector('.exercise-pr-display');
+                
+                if (exerciseName.length > 2) {
+                    fetch(`api/get-exercise-pr.php?exercise=${encodeURIComponent(exerciseName)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.pr) {
+                                if (prDisplay) {
+                                    prDisplay.textContent = `PR: ${data.pr}`;
+                                    prDisplay.style.display = 'block';
+                                }
+                            } else {
+                                if (prDisplay) prDisplay.style.display = 'none';
+                            }
+                        })
+                        .catch(() => {
+                            if (prDisplay) prDisplay.style.display = 'none';
+                        });
+                } else {
+                    if (prDisplay) prDisplay.style.display = 'none';
+                }
+            }
+        });
+
+        // ---------- Rest timer between sets ----------
+        function showRestTimer() {
+            const modal = document.createElement('div');
+            modal.className = 'rest-timer-overlay';
+            modal.innerHTML = `
+                <div class="rest-timer-modal">
+                    <div class="modal-head">
+                        <h3>Rest between sets</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">Pick a rest duration</p>
+                    </div>
+                    <div class="modal-body" style="padding: 16px 20px;">
+                        <div class="timer-presets">
+                            <button type="button" class="timer-preset" data-seconds="30">30s</button>
+                            <button type="button" class="timer-preset" data-seconds="60">1 min</button>
+                            <button type="button" class="timer-preset" data-seconds="90">1:30</button>
+                            <button type="button" class="timer-preset" data-seconds="120">2 min</button>
+                        </div>
+                        <div class="timer-display" id="timerDisplay" style="display: none;">0:00</div>
+                        <div class="modal-footer" style="gap: 10px;">
+                            <button type="button" class="btn-ghost timer-close">Skip</button>
+                            <button type="button" class="btn-primary timer-done">Done</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            let selectedSeconds = null;
+            let remainingSeconds = 0;
+            let timerInterval = null;
+            const timerDisplay = modal.querySelector('#timerDisplay');
+            const timerDoneBtn = modal.querySelector('.timer-done');
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${String(secs).padStart(2, '0')}`;
+            }
+
+            function updateDisplay() {
+                timerDisplay.textContent = formatTime(remainingSeconds);
+            }
+
+            function startTimer() {
+                if (!selectedSeconds) return;
+                
+                modal.querySelectorAll('.timer-preset').forEach(btn => btn.disabled = true);
+                remainingSeconds = selectedSeconds;
+                updateDisplay();
+                
+                timerInterval = setInterval(() => {
+                    remainingSeconds--;
+                    updateDisplay();
+
+                    if (remainingSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        // Play beep sound
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        oscillator.connect(gain);
+                        gain.connect(audioContext.destination);
+                        oscillator.frequency.value = 800;
+                        oscillator.type = 'sine';
+                        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        
+                        timerDoneBtn.textContent = 'Ready!';
+                        timerDoneBtn.style.background = 'rgba(100, 200, 100, 0.3)';
+                    }
+                }, 1000);
+            }
+
+            modal.querySelectorAll('.timer-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modal.querySelectorAll('.timer-preset').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedSeconds = parseInt(btn.dataset.seconds);
+                    startTimer();
+                });
+            });
+
+            modal.querySelector('.timer-close').addEventListener('click', () => {
+                if (timerInterval) clearInterval(timerInterval);
+                modal.remove();
+            });
+
+            modal.querySelector('.timer-done').addEventListener('click', () => {
+                if (timerInterval) clearInterval(timerInterval);
+                modal.remove();
+            });
+        }
+
+        // Show timer after set is logged (after user fills weight/reps and clicks add set)
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-set-btn')) {
+                setTimeout(() => {
+                    showRestTimer();
+                }, 300);
+            }
+        });
 
         // ---------- Nav toggle (mobile) ----------
         const navToggle = document.getElementById('navToggle');
