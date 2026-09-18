@@ -148,10 +148,10 @@ if ($planName !== '') {
 
 // --- Insert the workout session ---
 $stmt = $conn->prepare("
-    INSERT INTO workout_sessions (user_id, workout_plan_id, session_date, duration_minutes)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO workout_sessions (user_id, workout_plan_id, session_date, start_time, end_time, duration_minutes)
+    VALUES (?, ?, ?, ?, ?, ?)
 ");
-$stmt->bind_param("iisi", $userId, $workoutPlanId, $sessionDate, $durationMinutes);
+$stmt->bind_param("iisssi", $userId, $workoutPlanId, $sessionDate, $startTime, $endTime, $durationMinutes);
 
 if (!$stmt->execute()) {
     if ($conn->errno === 1062) {
