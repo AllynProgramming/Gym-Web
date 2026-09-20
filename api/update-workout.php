@@ -151,21 +151,31 @@ if ($planName !== '') {
     }
 }
 
-if ($workoutPlanId === null) {
-    $stmt = $conn->prepare("SELECT id FROM workout_sessions WHERE user_id = ? AND workout_plan_id IS NULL AND session_date = ? AND id != ?");
-    $stmt->bind_param("isi", $userId, $sessionDate, $workoutId);
-} else {
-    $stmt = $conn->prepare("SELECT id FROM workout_sessions WHERE user_id = ? AND workout_plan_id = ? AND session_date = ? AND id != ?");
-    $stmt->bind_param("iisi", $userId, $workoutPlanId, $sessionDate, $workoutId);
-}
+// Only check for duplicates if the user is actually creating a new session, not editing
+// We allow editing the same date/plan combination if it's the current workout
+$stmt = $conn->prepare("SELECT id FROM workout_sessions WHERE user_id = ? AND session_date = ? AND id != ?");
+$stmt->bind_param("isi", $userId, $sessionDate, $workoutId);
 $stmt->execute();
 $result = $stmt->get_result();
-$stmt->close();
 
+// Only prevent if there's ANOTHER workout on the same date (regardless of plan)
+// This is more lenient than before - editing existing workouts won't be blocked
 if ($result->num_rows > 0) {
-    echo json_encode(['success' => false, 'error' => 'A workout for this date and plan already exists.']);
-    exit;
+    // Check if it's truly a duplicate (same plan AND same date)
+    if ($workoutPlanId !== null) {
+        $stmt2 = $conn->prepare("SELECT id FROM workout_sessions WHERE user_id = ? AND workout_plan_id = ? AND session_date = ? AND id != ?");
+        $stmt2->bind_param("iisi", $userId, $workoutPlanId, $sessionDate, $workoutId);
+        $stmt2->execute();
+        $dupResult = $stmt2->get_result();
+        $stmt2->close();
+        
+        if ($dupResult->num_rows > 0) {
+            echo json_encode(['success' => false, 'error' => 'A workout with this plan already exists on this date.']);
+            exit;
+        }
+    }
 }
+$stmt->close();
 
 $conn->begin_transaction();
 

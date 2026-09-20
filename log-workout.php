@@ -768,9 +768,21 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         function populateWorkout(data) {
             document.getElementById('session_date').value = data.session_date;
-            // Ensure times are in HH:MM format (strip seconds if present)
-            document.getElementById('start_time').value = data.start_time ? data.start_time.substring(0, 5) : '';
-            document.getElementById('end_time').value = data.end_time ? data.end_time.substring(0, 5) : '';
+            
+            // Safely handle times - validate format before setting
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '';
+                // Strip seconds if present (HH:MM:SS -> HH:MM)
+                const trimmed = timeStr.substring(0, 5);
+                // Validate HH:MM format
+                if (/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
+                    return trimmed;
+                }
+                return ''; // Return empty if invalid format
+            };
+            
+            document.getElementById('start_time').value = formatTime(data.start_time);
+            document.getElementById('end_time').value = formatTime(data.end_time);
             setPlanSelection(data.plan_name ?? '');
 
             exerciseList.innerHTML = '';
