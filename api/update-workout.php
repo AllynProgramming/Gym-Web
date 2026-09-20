@@ -41,27 +41,7 @@ if (!verifyOwnership($conn, 'workout_sessions', $workoutId)) {
 
 $planName = trim($input['plan_name'] ?? '');
 $sessionDate = trim($input['session_date'] ?? '');
-$startTime = trim($input['start_time'] ?? '');
-$endTime = trim($input['end_time'] ?? '');
-$durationMinutes = null;
-
-// Calculate duration from start and end times if both are provided
-if ($startTime && $endTime) {
-    $startParts = explode(':', $startTime);
-    $endParts = explode(':', $endTime);
-    if (count($startParts) === 2 && count($endParts) === 2) {
-        $startTotalMin = (int) $startParts[0] * 60 + (int) $startParts[1];
-        $endTotalMin = (int) $endParts[0] * 60 + (int) $endParts[1];
-        $durationMinutes = $endTotalMin - $startTotalMin;
-        if ($durationMinutes <= 0) {
-            $durationMinutes = null; // Invalid time range
-        }
-    }
-} else {
-    // Fallback to duration_minutes if provided
-    $durationMinutes = trim((string) ($input['duration_minutes'] ?? ''));
-    $durationMinutes = ($durationMinutes === '') ? null : (int) $durationMinutes;
-}
+$durationMinutes = isset($input['duration_minutes']) ? (int) $input['duration_minutes'] : null;
 
 $exercisesInput = is_array($input['exercises'] ?? null) ? $input['exercises'] : [];
 
@@ -179,8 +159,8 @@ $stmt->close();
 
 $conn->begin_transaction();
 
-$stmt = $conn->prepare("UPDATE workout_sessions SET workout_plan_id = ?, session_date = ?, start_time = ?, end_time = ?, duration_minutes = ? WHERE id = ?");
-$stmt->bind_param("isssii", $workoutPlanId, $sessionDate, $startTime, $endTime, $durationMinutes, $workoutId);
+$stmt = $conn->prepare("UPDATE workout_sessions SET workout_plan_id = ?, session_date = ?, duration_minutes = ? WHERE id = ?");
+$stmt->bind_param("isii", $workoutPlanId, $sessionDate, $durationMinutes, $workoutId);
 if (!$stmt->execute()) {
     $conn->rollback();
     echo json_encode(['success' => false, 'error' => 'Could not update the workout session.']);

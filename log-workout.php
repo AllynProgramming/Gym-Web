@@ -35,7 +35,7 @@ $editWorkoutData = null;
 
 if ($editWorkoutId) {
     $stmt = $conn->prepare(
-        "SELECT ws.session_date, ws.start_time, ws.end_time, ws.duration_minutes, wp.plan_name
+        "SELECT ws.session_date, ws.duration_minutes, wp.plan_name
          FROM workout_sessions ws
          LEFT JOIN workout_plans wp ON ws.workout_plan_id = wp.id
          WHERE ws.id = ? AND ws.user_id = ? LIMIT 1"
@@ -49,8 +49,6 @@ if ($editWorkoutId) {
         $selectedSessionDate = $sessionRow['session_date'];
         $editWorkoutData = [
             'session_date' => $sessionRow['session_date'],
-            'start_time' => $sessionRow['start_time'] ?? '',
-            'end_time' => $sessionRow['end_time'] ?? '',
             'duration_minutes' => $sessionRow['duration_minutes'],
             'plan_name' => $sessionRow['plan_name'] ?? '',
             'exercises' => [],
@@ -646,12 +644,8 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
                 </div>
                 <div class="field-grid">
                     <div class="form-group">
-                        <label for="start_time">Start time</label>
-                        <input type="time" id="start_time" name="start_time">
-                    </div>
-                    <div class="form-group">
-                        <label for="end_time">End time (optional)</label>
-                        <input type="time" id="end_time" name="end_time">
+                        <label for="duration_minutes">Duration (minutes)</label>
+                        <input type="number" id="duration_minutes" name="duration_minutes" placeholder="60" min="0">
                     </div>
                     <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12px;">
                         <span id="duration_display" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;"></span>
@@ -768,21 +762,6 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
 
         function populateWorkout(data) {
             document.getElementById('session_date').value = data.session_date;
-            
-            // Safely handle times - validate format before setting
-            const formatTime = (timeStr) => {
-                if (!timeStr) return '';
-                // Strip seconds if present (HH:MM:SS -> HH:MM)
-                const trimmed = timeStr.substring(0, 5);
-                // Validate HH:MM format
-                if (/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
-                    return trimmed;
-                }
-                return ''; // Return empty if invalid format
-            };
-            
-            document.getElementById('start_time').value = formatTime(data.start_time);
-            document.getElementById('end_time').value = formatTime(data.end_time);
             setPlanSelection(data.plan_name ?? '');
 
             exerciseList.innerHTML = '';
@@ -1142,8 +1121,6 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
                 workout_id: workoutId,
                 plan_name: planNameInput.value,
                 session_date: document.getElementById('session_date').value,
-                start_time: document.getElementById('start_time').value || null,
-                end_time: document.getElementById('end_time').value || null,
                 duration_minutes: durationMinutes,
                 exercises,
             };
@@ -1162,8 +1139,8 @@ sort($exerciseSuggestions, SORT_NATURAL | SORT_FLAG_CASE);
         function resetFormForNextEntry() {
             // Start fresh after saving, default to today’s date so add flow is always current.
             document.getElementById('session_date').value = getLocalDateString();
-            document.getElementById('start_time').value = '';
-            document.getElementById('end_time').value = '';
+            
+            
             document.getElementById('duration_display').textContent = '';
             exerciseList.innerHTML = '';
             addExerciseCard();
